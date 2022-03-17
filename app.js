@@ -3,12 +3,15 @@ const app = express();
 const mongoose = require ('mongoose');
 const userRoutes = require('./routes/user');
 const sauceRoutes = require('./routes/sauce');
+const path = require("path");
 
-mongoose.connect ('mongodb+srv://Admin:rWJ10KNpXNDccKRU@cluster0.3nbot.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+require('dotenv').config();
+
+mongoose.connect (process.env.DATABASE_MONGO,
   { useNewUrlParser: true,
     useUnifiedTopology: true })
-  .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'));
+  .then(() => console.log('Connexion ï¿½ MongoDB rï¿½ussie !'))
+  .catch(() => console.log('Connexion ï¿½ MongoDB ï¿½chouï¿½e !'));
 
 app.use(express.json());
 
@@ -19,6 +22,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use("/images", express.static(path.join(__dirname, 'images')));
 app.use('/api/auth',userRoutes);
 app.use('/api/sauce',sauceRoutes);
 
