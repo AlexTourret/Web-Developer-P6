@@ -13,8 +13,10 @@ mongoose.connect (process.env.DATABASE_MONGO,
   .then(() => console.log('Connexion � MongoDB r�ussie !'))
   .catch(() => console.log('Connexion � MongoDB �chou�e !'));
 
+//prend toutes les requêtes qui ont un Content-type application/json et met à dispo leur body dans l'objet req
 app.use(express.json());
-//Permet de faire d'accéder à l'api depuis n'importe quelle origine ('*')
+
+// Permet de faire d'accéder à l'api depuis n'importe quelle origine ('*')
 // ajouter les headers mentionnés aux requêtes envoyées vers notre API
 // envoyer des requêtes avec les méthodes mentionnées
 app.use((req, res, next) => {
