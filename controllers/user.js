@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 var passwordValidator = require('password-validator');
 var schema = new passwordValidator();
+var validator = require("email-validator");
 
 schema
 .is().min(8)                                    // Minimum length 8
@@ -19,6 +20,10 @@ schema
 require('dotenv').config()
 
 exports.signup = (req, res, next) => {
+  if (!validator.validate(req.body.email)){
+    return res.status(401).json({message:'Email erronée, format correct abc@xyz.com'});
+  }
+  
   if (!schema.validate(req.body.password)){
     return res.status(401).json({message:'Le mot de passe doit comporter au moins 8 caractéres, lettre majuscule et minuscule ainsi que minimum 2 chiffres et pas d espaces'});
   }
