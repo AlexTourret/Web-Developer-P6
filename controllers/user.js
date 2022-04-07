@@ -3,10 +3,26 @@
 const bcrypt = require ('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+var passwordValidator = require('password-validator');
+var schema = new passwordValidator();
+
+schema
+.is().min(8)                                    // Minimum length 8
+.is().max(100)                                  // Maximum length 100
+.has().uppercase()                              // Must have uppercase letters
+.has().lowercase()                              // Must have lowercase letters
+.has().digits(2)                                // Must have at least 2 digits
+.has().not().spaces()                           // Should not have spaces
+.is().not().oneOf(['Passw0rd', 'Password123']);
+
 
 require('dotenv').config()
 
 exports.signup = (req, res, next) => {
+  if (!schema.validate(req.body.password)){
+    return res.status(401).json({message:'Le mot de passe doit comporter au moins 8 caractéres, lettre majuscule et minuscule ainsi que minimum 2 chiffres et pas d espaces'});
+  }
+  
   bcrypt.hash(req.body.password, 10)
     .then(hash => {
       const user = new User({
@@ -17,8 +33,10 @@ exports.signup = (req, res, next) => {
         .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
         .catch(error => res.status(400).json({ error }));
     })
-    .catch(error => res.status(500).json({ error }));
+    .catch(error => res.status(500).json({ error }))
+  
 };
+
 
 exports.login = (req, res, next) => {
   User.findOne({ email: req.body.email })
