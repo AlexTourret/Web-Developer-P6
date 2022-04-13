@@ -5,14 +5,22 @@ const mongoose = require ('mongoose');
 const userRoutes = require('./routes/user');
 const sauceRoutes = require('./routes/sauce');
 const path = require("path");
+const rateLimit = require('express-rate-limit')
 
 require('dotenv').config();
+
+const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
 
 mongoose.connect (process.env.DATABASE_MONGO,
   { useNewUrlParser: true,
     useUnifiedTopology: true })
-  .then(() => console.log('Connexion � MongoDB r�ussie !'))
-  .catch(() => console.log('Connexion � MongoDB �chou�e !'));
+  .then(() => console.log('Connexion à MongoDB réussie !'))
+  .catch(() => console.log('Connexion à MongoDB échouée !'));
 
 //prend toutes les requêtes qui ont un Content-type application/json et met à dispo leur body dans l'objet req
 app.use(express.json());
@@ -27,6 +35,8 @@ app.use((req, res, next) => {
   next();
 });
 
+
+app.use(limiter);
 app.use("/images", express.static(path.join(__dirname, 'images')));
 app.use('/api/auth',userRoutes);
 app.use('/api/sauces',sauceRoutes);

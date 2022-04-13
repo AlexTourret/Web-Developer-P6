@@ -44,35 +44,45 @@ exports.createSauce = (req, res, next) => {
 
 
 exports.modifySauce = (req, res, next) => {
-	if(req.file){ 
-    Sauce.findOne({ _id: req.params.id }) 
-    .then(sauce => {
-        const filename = sauce.imageUrl.split('/images/')[1];
-        fs.unlink(`images/${filename}`, (err) => { 
-            if (err) 
-            throw err
-        });
+  Sauce.findOne({ _id: req.params.id })
+    .then((sauce) => {
+      res.status(200).json({ message: req.body})
+    //   if (sauce.userId.includes(req.body.userId)){
+
+    //     if(req.file){ 
+    //       Sauce.findOne({ _id: req.params.id }) 
+    //       .then(sauce => {
+    //           const filename = sauce.imageUrl.split('/images/')[1];
+    //           fs.unlink(`images/${filename}`, (err) => { 
+    //               if (err) 
+    //               throw err
+    //           });
+    //       })
+    //       .catch(error => res.status(400).json({error}));
+    //     }
+    //     // si fichier image
+    //     const sauceObject = req.file ? 
+    //     {  
+    //         //récupèraration l'objet json
+    //         ...JSON.parse(req.body.sauce), 
+    //         //ajout de l'image URL
+    //         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}` 
+    //     } : { ...req.body} //sinon prise du corps de la requête
+    //     //Modification de la sauce
+    //     Sauce.updateOne({ _id: req.params.id}, { ...sauceObject, _id: req.params.id }) 
+    //       .then(() => res.status(200).json({message:'Sauce modifiée'}))
+    //       .catch(error => res.status(400).json({error}));
+    // }
     })
-    .catch(error => res.status(400).json({error}));
-  }
-  // si fichier image
-  const sauceObject = req.file ? 
-  {  
-      //récupèraration l'objet json
-      ...JSON.parse(req.body.sauce), 
-      //ajout de l'image URL
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}` 
-  } : { ...req.body} //sinon prise du corps de la requête
-  //Modification de la sauce
-  Sauce.updateOne({ _id: req.params.id}, { ...sauceObject, _id: req.params.id }) 
-    .then(() => res.status(200).json({message:'Sauce modifiée'}))
-    .catch(error => res.status(400).json({error}));
+    .catch((error) => res.status(403).json({ message : "Unauthorized request" }));      
 };
 
 
 exports.likeSauce = (req, res, next) => {
-
   if (req.body.like === 1) { //si like est a 1
+      Sauce.findOne({ _id: req.params.id })
+      .then((sauce) => {
+          if (!sauce.usersLiked.includes(req.body.userId)){ // on s'assure que l'utilisateur n'a pas déjà like
       Sauce.updateOne( //On modifie celui dont l'ID est égale à l'ID envoyé dans les paramètres de requêtes avec Likes a 1 et userId dans le tableau usersLiked
           { _id: req.params.id }, 
           { $inc: { likes: 1 },$push: { usersLiked: req.body.userId }},
@@ -80,15 +90,22 @@ exports.likeSauce = (req, res, next) => {
       )
         .then(() => res.status(200).json({ message: 'J\'aime' }))
         .catch((error) => res.status(400).json({ error }));
+      }})
+      .catch((error) => res.status(403).json({ message : "Unauthorized request" }));
 
   } else if (req.body.like === -1) { //si like est a -1
-      Sauce.updateOne( //On modifie celui dont l'ID est égale à l'ID envoyé dans les paramètres de requêtes avec Dislikes a 1 et userId dans le tableau userDisLiked
-      { _id: req.params.id },
-      { $inc: { dislikes: 1 },$push: { usersDisliked: req.body.userId }},
-      { _id: req.params.id }
-      )
-        .then(() => res.status(200).json({ message: 'Je n\'aime pas' }))
-        .catch((error) => res.status(400).json({ error }));
+    Sauce.findOne({ _id: req.params.id }) 
+    .then((sauce) => {
+      if (!sauce.usersDisliked.includes(req.body.userId)){ // on s'assure que l'utilisateur n'a pas déjà dislike
+        Sauce.updateOne( //On modifie celui dont l'ID est égale à l'ID envoyé dans les paramètres de requêtes avec Dislikes a 1 et userId dans le tableau userDisLiked
+        { _id: req.params.id },
+        { $inc: { dislikes: 1 },$push: { usersDisliked: req.body.userId }},
+        { _id: req.params.id }
+        )
+          .then(() => res.status(200).json({ message: 'Je n\'aime pas' }))
+          .catch((error) => res.status(400).json({ error }));
+      }})
+      .catch((error) => res.status(403).json({ message : "Unauthorized request" }));
         
   } else {
       Sauce.findOne({ _id: req.params.id })
@@ -113,4 +130,7 @@ exports.likeSauce = (req, res, next) => {
           }}
       )
       .catch((error) => res.status(400).json({ message : 'ça marche pas' }));
-}}
+  }
+  
+  
+};
