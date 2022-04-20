@@ -27,8 +27,8 @@ exports.signup = (req, res, next) => {
   if (!schema.validate(req.body.password)){
     return res.status(401).json({message:'Le mot de passe doit comporter au moins 8 caractéres, lettre majuscule et minuscule ainsi que minimum 2 chiffres et pas d espaces'});
   }
-  
-  bcrypt.hash(req.body.password, 10)
+      
+    bcrypt.hash(req.body.password, 10)
     .then(hash => {
       const user = new User({
         email: req.body.email,
@@ -39,7 +39,7 @@ exports.signup = (req, res, next) => {
         .catch(error => res.status(400).json({ error }));
     })
     .catch(error => res.status(500).json({ error }))
-  
+    
 };
 
 

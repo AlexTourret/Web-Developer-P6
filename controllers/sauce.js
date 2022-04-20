@@ -1,6 +1,7 @@
 "use strict";
 
 const Sauce = require('../models/Sauce');
+const jwt = require('jsonwebtoken');
 const fs = require('fs'); 
 
 exports.getOneSauce = (req, res, next) => {
@@ -16,16 +17,36 @@ exports.getAllSauce = (req, res, next) => {
 };
 
 exports.deleteSauce = (req, res, next) => {
-  Sauce.findOne({ _id: req.params.id })
+  try {
+    //On récupére le userID du token
+    const token = req.headers.authorization.split(' ')[1];
+    const decodedToken = jwt.verify(token, process.env.TOKEN );
+    const userId = decodedToken.userId;
+  
+    Sauce.findOne({ _id: req.params.id })
     .then(sauce => {
-      const filename = sauce.imageUrl.split('/images/')[1];
-      fs.unlink(`images/${filename}`, () => {
-        sauce.deleteOne({ _id: req.params.id })
-          .then(() => res.status(200).json({ message: 'Sauce supprimée !'}))
-          .catch(error => res.status(400).json({ error }));
-      });
+      //on le compare au créateur de la sauce à supprimer
+      if (sauce.userId == userId){
+        //si ok alors on supprime la sauce
+        const filename = sauce.imageUrl.split('/images/')[1];
+        fs.unlink(`images/${filename}`, () => {
+          sauce.deleteOne({ _id: req.params.id })
+            .then(() => res.status(200).json({ message: 'Sauce supprimée !'}))
+            .catch(error => res.status(400).json({ error }));
+        });
+      }
+      else {
+        // sinon envoi d'un message
+        return res.status(403).json({message:'Unauthorized request'}); 
+      }
     })
     .catch(error => res.status(500).json({ error }));
+  }
+  catch {
+    res.status(401).json({
+      error: new Error('Invalid request!')
+    });
+  }
 };
 
 exports.createSauce = (req, res, next) => {
@@ -44,37 +65,52 @@ exports.createSauce = (req, res, next) => {
 
 
 exports.modifySauce = (req, res, next) => {
-  Sauce.findOne({ _id: req.params.id })
+  try {
+    //On récupére le userID du token
+    const token = req.headers.authorization.split(' ')[1];
+    const decodedToken = jwt.verify(token, process.env.TOKEN );
+    const userId = decodedToken.userId;
+    Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
-      res.status(200).json({ message: req.body})
-    //   if (sauce.userId.includes(req.body.userId)){
-
-    //     if(req.file){ 
-    //       Sauce.findOne({ _id: req.params.id }) 
-    //       .then(sauce => {
-    //           const filename = sauce.imageUrl.split('/images/')[1];
-    //           fs.unlink(`images/${filename}`, (err) => { 
-    //               if (err) 
-    //               throw err
-    //           });
-    //       })
-    //       .catch(error => res.status(400).json({error}));
-    //     }
-    //     // si fichier image
-    //     const sauceObject = req.file ? 
-    //     {  
-    //         //récupèraration l'objet json
-    //         ...JSON.parse(req.body.sauce), 
-    //         //ajout de l'image URL
-    //         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}` 
-    //     } : { ...req.body} //sinon prise du corps de la requête
-    //     //Modification de la sauce
-    //     Sauce.updateOne({ _id: req.params.id}, { ...sauceObject, _id: req.params.id }) 
-    //       .then(() => res.status(200).json({message:'Sauce modifiée'}))
-    //       .catch(error => res.status(400).json({error}));
-    // }
+      //on le compare au créateur de la sauce à modifier
+      if (sauce.userId == userId){
+        //si ok alors on modifie la sauce
+        if(req.file){ 
+          Sauce.findOne({ _id: req.params.id }) 
+          .then(sauce => {
+              const filename = sauce.imageUrl.split('/images/')[1];
+              fs.unlink(`images/${filename}`, (err) => { 
+                  if (err) 
+                  throw err
+              });
+          })
+          .catch(error => res.status(400).json({error}));
+        }
+        // si fichier image
+        const sauceObject = req.file ? 
+        {  
+            //récupèraration l'objet json
+            ...JSON.parse(req.body.sauce), 
+            //ajout de l'image URL
+            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}` 
+        } : { ...req.body} //sinon prise du corps de la requête
+        //Modification de la sauce
+        Sauce.updateOne({ _id: req.params.id}, { ...sauceObject, _id: req.params.id }) 
+          .then(() => res.status(200).json({message:'Sauce modifiée'}))
+          .catch(error => res.status(400).json({error}));
+    }
+    else {
+      // sinon envoi d'un message
+      return res.status(403).json({message:'Unauthorized request'}); 
+    }
     })
-    .catch((error) => res.status(403).json({ message : "Unauthorized request" }));      
+    .catch((error) => res.status(403).json({ message : "Unauthorized request" })); 
+  }
+  catch {
+    res.status(401).json({
+      error: new Error('Invalid request!')
+    });
+  }     
 };
 
 
@@ -82,7 +118,7 @@ exports.likeSauce = (req, res, next) => {
   if (req.body.like === 1) { //si like est a 1
       Sauce.findOne({ _id: req.params.id })
       .then((sauce) => {
-          if (!sauce.usersLiked.includes(req.body.userId)){ // on s'assure que l'utilisateur n'a pas déjà like
+          if (!sauce.usersLiked ==req.body.userId){ // on s'assure que l'utilisateur n'a pas déjà like
       Sauce.updateOne( //On modifie celui dont l'ID est égale à l'ID envoyé dans les paramètres de requêtes avec Likes a 1 et userId dans le tableau usersLiked
           { _id: req.params.id }, 
           { $inc: { likes: 1 },$push: { usersLiked: req.body.userId }},
